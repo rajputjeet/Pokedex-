@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.composeappdemmo.pokemonlist.PokemonListScreen
 import com.example.composeappdemmo.ui.theme.ComposeAppDemmoTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -30,6 +31,8 @@ class MainActivity : ComponentActivity() {
                 {
 
                     composable("pokemon_list_screen") {
+
+                        PokemonListScreen(navController =navController)
 
                     }
 
