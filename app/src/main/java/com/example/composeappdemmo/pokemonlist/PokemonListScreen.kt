@@ -1,5 +1,6 @@
 package com.example.composeappdemmo.pokemonlist
 
+import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,11 +20,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.composeappdemmo.R
@@ -54,7 +58,8 @@ import com.example.composeappdemmo.data.models.PokemonListEntry
 import com.example.composeappdemmo.ui.theme.RobotoCondensed
 
 @Composable
-fun PokemonListScreen(navController: NavController) {
+fun PokemonListScreen(navController: NavController,
+viewModel: PokemonViewModel = hiltViewModel()) {
 
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -62,7 +67,7 @@ fun PokemonListScreen(navController: NavController) {
     ) {
 
         Column {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(40.dp))
             Image(
                 painter = painterResource(id = R.drawable.ic_international_pok_mon_logo),
                 contentDescription = "Pokemon",
@@ -76,7 +81,7 @@ fun PokemonListScreen(navController: NavController) {
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-
+             viewModel.searchPokemonList(it)
             }
             Spacer(modifier = Modifier.height(16.dp))
             PokemonList(navController = navController)
@@ -120,7 +125,7 @@ fun SearchBar(
                 .shadow(5.dp, CircleShape)
                 .padding(horizontal = 20.dp, vertical = 12.dp)
                 .onFocusChanged {
-                    isHintDisplayed = !it.isFocused
+                    isHintDisplayed = !it.isFocused && text.isEmpty()
                 }
         )
         if (isHintDisplayed) {
@@ -165,31 +170,54 @@ fun PokemonEntry(
                 )
             )
             .clickable {
-                navController.navigate("pokemon_detail_screen/${dominantColor.toArgb()}/${entry.pokemonName}")
+                navController.navigate("pokemon_details_screen/${dominantColor.toArgb()}/${entry.pokemonName}")
+
             }
     ) {
         Column {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(entry.imageUrl)
-                    .apply {
-                        crossfade(true)
+            var isLoading by remember { mutableStateOf(true) }
+            val context = LocalContext.current
+            val imageLoader = ImageLoader(context)
+            val request = ImageRequest.Builder(context)
+                .data(entry.imageUrl)
+                .build()
+
+            LaunchedEffect(entry.imageUrl) {
+                val result = imageLoader.execute(request)
+                val bitmap = (result.drawable as? BitmapDrawable)?.bitmap
+                bitmap?.let {
+                    val drawable = BitmapDrawable(context.resources, it)
+                    viewModel.calcDominateColor(drawable) { color ->
+                        dominantColor = color
                     }
-//                    .target {
-//                        viewModel.calcDominateColor(it) { color ->
-//                            dominantColor = color
-//                        }
-//                    }
-                    .build(),
-                contentDescription = entry.pokemonName,
-                modifier = Modifier
-                    .size(120.dp)
-                    .align(alignment = Alignment.CenterHorizontally)
-            )
-            CircularProgressIndicator(
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.scale(0.5f)
-            )
+                }
+            }
+
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (isLoading){
+                    CircularProgressIndicator()
+                }
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(entry.imageUrl)
+                        .apply {
+                            crossfade(true)
+                        } .listener(
+                            onStart = { isLoading = true },
+                            onSuccess = { _, _ -> isLoading = false },
+                            onError = { _, _ -> isLoading = false }
+                        )
+                        .build(),
+                    contentDescription = entry.pokemonName,
+                    modifier = Modifier
+                        .size(120.dp)
+                        .align(Alignment.Center)
+                )
+            }
+
             Text(
                 text = entry.pokemonName,
                 fontFamily = RobotoCondensed,
@@ -213,6 +241,7 @@ fun PokemonList(
     val endReached by remember { viewModel.endReached }
     val loadError by remember { viewModel.loadError }
     val isLoading by remember { viewModel.isLoading }
+    val isSearching by remember { viewModel.isSearching }
 
     LazyColumn(contentPadding = PaddingValues(16.dp)) {
 
@@ -222,13 +251,26 @@ fun PokemonList(
             pokemonList.size / 2 + 1
 
         }
-        items(itemCount){
-            if (it>= itemCount - 1 && !endReached && !isLoading){
-                viewModel.paginatedPokemonList()
+        items(itemCount) {
+            if (it >= itemCount - 1 && !endReached && !isLoading && !isSearching) {
+                LaunchedEffect(key1 = true) {
+                    viewModel.paginatedPokemonList()
+                }
             }
             PokemonRow(index = it, entries = pokemonList, navController = navController)
         }
 
+    }
+    Box(contentAlignment = Alignment.Center,
+        modifier = Modifier.fillMaxSize()) {
+        if (isLoading){
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary )
+        }
+        if (loadError.isNotEmpty()){
+            RetrySection(error = loadError) {
+                viewModel.paginatedPokemonList()
+            }
+        }
     }
 
 }
@@ -248,9 +290,9 @@ fun PokemonRow(
                 modifier = Modifier.weight(1f)
             )
             Spacer(modifier = Modifier.width(16.dp))
-            if (entries.size >= index * 2 + 1) {
+            if (entries.size >= index * 2 + 2) {
                 PokemonEntry(
-                    entry = entries[index * 2],
+                    entry = entries[index * 2 + 1],
                     navController = navController,
                     modifier = Modifier.weight(1f)
                 )
@@ -262,18 +304,27 @@ fun PokemonRow(
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun PokemonEntryPreview() {
-    val navController = rememberNavController()
-    val entry = PokemonListEntry(
-        pokemonName = "Pikachu",
-        imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png",
-        1
-    )
+fun RetrySection(
+    error: String,
+    onRetry: () -> Unit
+) {
 
-    PokemonEntry(
-        entry = entry,
-        navController = navController
-    )
+    Column {
+        Text(
+            text = error,
+            color = Color.Red,
+            fontSize = 18.sp
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(
+            onClick = { onRetry() },
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text(text = "Retry")
+        }
+
+    }
+
 }

@@ -11,9 +11,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.composeappdemmo.pokemondetail.PokemonDetailScreen
 import com.example.composeappdemmo.pokemonlist.PokemonListScreen
 import com.example.composeappdemmo.ui.theme.ComposeAppDemmoTheme
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.Locale
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -32,28 +34,39 @@ class MainActivity : ComponentActivity() {
 
                     composable("pokemon_list_screen") {
 
-                        PokemonListScreen(navController =navController)
+                        PokemonListScreen(navController = navController)
 
                     }
 
-                    composable("pokemon_details_screen/{dominantColor}/{pokemonName}", arguments = listOf(
-                        navArgument("dominantColor"){
-                            type = NavType.IntType
-                        },
-                        navArgument("pokemonName"){
-                            type = NavType.StringType
-                        }
-                    )) {
+                    // Ensure the route name here matches the one used in the navigation call
+                    composable("pokemon_details_screen/{dominantColor}/{pokemonName}",
+                        arguments = listOf(
+                            navArgument("dominantColor") {
+                                type = NavType.IntType
+                            },
+                            navArgument("pokemonName") {
+                                type = NavType.StringType
+                            }
+                        )
+                    ) { backStackEntry ->
 
+                        // Retrieve and convert arguments from the backStackEntry
                         val dominantColor = remember {
-                          val color =  it.arguments?.getInt("dominantColor")
-                            color?.let { Color(it) } ?: Color.White
+                            val color = backStackEntry.arguments?.getInt("dominantColor")
+                            color?.let { Color(it) } ?: Color.White // Default to Color.White if null
                         }
-                       val pokemonName  = remember {
-                         it.arguments?.getString("pokemonName")
+                        val pokemonName = remember {
+                            backStackEntry.arguments?.getString("pokemonName")
+                        }
 
+                        // Pass the arguments to the destination screen
+                        PokemonDetailScreen(
+                            dominantColor = dominantColor,
+                            pokemonName = pokemonName?.toLowerCase(Locale.ROOT) ?: "",
+                            navController = navController
+                        )
                     }
-                    }
+
 
                 }
 

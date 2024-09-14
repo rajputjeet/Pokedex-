@@ -9,9 +9,9 @@ import androidx.compose.ui.graphics.Color
 
 private val DarkColorPalette = darkColorScheme(
     primary = Color.Yellow,
-    background = Color(0xFF101010),
+    background = Color.DarkGray,
     onBackground = Color.White,
-    surface = Color(0xFF303030),
+    surface = Color.Black,
     onSurface = Color.White
 )
 

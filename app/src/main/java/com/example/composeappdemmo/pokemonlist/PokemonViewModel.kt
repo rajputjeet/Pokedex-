@@ -3,7 +3,6 @@ package com.example.composeappdemmo.pokemonlist
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
@@ -14,6 +13,7 @@ import com.example.composeappdemmo.repository.PokemonRepository
 import com.example.composeappdemmo.util.Constants.PAGE_SIZE
 import com.example.composeappdemmo.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -27,6 +27,42 @@ class PokemonViewModel @Inject constructor(
     var loadError = mutableStateOf("")
     var isLoading = mutableStateOf(true)
     var endReached = mutableStateOf(false)
+
+    private var cachedList = listOf<PokemonListEntry>()
+    private var isSearchStarting = true
+    var isSearching = mutableStateOf(false)
+
+
+    fun searchPokemonList(query: String) {
+        val listToSearch = if (isSearchStarting) {
+            pokemonList.value
+        } else {
+            cachedList
+        }
+
+        viewModelScope.launch(Dispatchers.Default) {
+
+            if (query.isEmpty()) {
+                pokemonList.value = cachedList
+                isSearching.value = false
+                isSearchStarting = true
+                return@launch
+            }else{
+               val results = listToSearch.filter {
+                   it.pokemonName.contains(query.trim(), ignoreCase = true) ||
+                           it.number.toString() == query.trim()
+               }
+                if(isSearchStarting){
+                    cachedList = pokemonList.value
+                    isSearchStarting = false
+                }
+                pokemonList.value = results
+                isSearching.value = true
+            }
+
+        }
+
+    }
 
     init {
         paginatedPokemonList()
@@ -64,6 +100,9 @@ class PokemonViewModel @Inject constructor(
                     isLoading.value = false
 
                 }
+
+                is Resource.Loading ->{}
+
             }
         }
 
