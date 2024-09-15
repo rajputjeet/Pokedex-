@@ -22,6 +22,6 @@ dependencyResolutionManagement {
 
 }
 
-rootProject.name = "ComposeAppDemmo"
+rootProject.name = "PokeDex"
 include(":app")
  
