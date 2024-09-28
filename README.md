@@ -14,3 +14,4 @@ Kotlin: Programming language for Android development
 Jetpack Compose: Modern toolkit for building native UI
 MVVM Architecture: Model-View-ViewModel architectural pattern
 Dependency Injection: For managing dependencies in a clean way
+d
