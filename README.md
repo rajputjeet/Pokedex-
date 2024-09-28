@@ -24,7 +24,7 @@ MVVM Architecture: Model-View-ViewModel architectural pattern
 
 Dependency Injection: For managing dependencies in a clean way
 
-#ScreenShoots
+# ScreenShoots
 ![Image 2024-09-28 at 22 28 34_b03b4303](https://github.com/user-attachments/assets/83c3c6b1-3ff2-4a1d-9ed8-91e9adf83c2e)
-![Image 2024-09-28 at 22 28 34_b03b4303](https://github.com/user-attachments/assets/694972ae-5404-40b1-9f12-22069680d7d0)
+![Image 2024-09-28 at 22 28 33_5bdf6479](https://github.com/user-attachments/assets/ca3ddaad-3bc3-4b22-96e9-0eb630783106)
 
